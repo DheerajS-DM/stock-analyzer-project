@@ -19,25 +19,32 @@ export default function StockAnalyzer() {
     fetchAllStocks();
   }, []);
 
-  const fetchAllStocks = async () => {
+const fetchAllStocks = async () => {
     try {
-      setLoading(true);
-      const response = await fetch(`${API_URL}/stocks`);
-      const data = await response.json();
-      
-      setStocks(data.stocks);
-      if (data.stocks.length > 0) {
-        setSelectedStock(data.stocks[0]);
-        await fetchStockChart(data.stocks[0].symbol);
-      }
-      setError(null);
-    } catch (err) {
-      setError('Failed to load stocks: ' + err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+        setLoading(true);
+        const response = await fetch(`${API_URL}/stocks`);
+        const data = await response.json();
 
+        console.log("API Response:", data); // <--- Add this!
+
+        // 2. Handle both possible formats (Array vs Object)
+        // If 'data' IS the array, use 'data'. If 'data.stocks' exists, use that.
+        const stockList = Array.isArray(data) ? data : (data.stocks || []);
+        
+        setStocks(stockList);
+
+        if (stockList.length > 0) {
+            setSelectedStock(stockList[0]);
+            await fetchStockChart(stockList[0].symbol);
+        }
+        setError(null);
+    } catch (err) {
+        // ... (rest of your code)
+        setError('Failed to fetch stocks: ' + err.message);
+    } finally {
+        setLoading(false);
+    }
+};
   const fetchStockChart = async (symbol) => {
     // Placeholder chart data (you'd fetch historical prices here)
     // For MVP, we'll show a simple mock
