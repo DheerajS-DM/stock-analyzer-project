@@ -4,7 +4,7 @@ import {
   Brush
 } from 'recharts';
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+const API_URL = "https://stock-analyzer-project-0fkx.onrender.com";
 
 function App() {
   const [stocks, setStocks] = useState([]);
