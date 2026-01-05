@@ -20,7 +20,7 @@ function App() {
     try {
       setLoading(true);
       const response = await fetch(`${API_URL}/stocks`);
-      const data = await response.json();
+      const data = await response.json(); 
       setStocks(data.stocks);
       if (data.stocks.length > 0) {
         setSelectedStock(data.stocks[0]);
