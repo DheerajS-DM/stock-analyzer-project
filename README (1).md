@@ -24,8 +24,8 @@ Stock Value Analyzer is a **production-grade full-stack quantitative finance app
 - **Mean Reversion Analysis**
 
 **Features:**
-- 📈 Real-time stock analysis for 100+ US stocks
-- 📊 Interactive charts with 270-day price history
+- 📈 Real-time stock analysis for 10 US stocks
+- 📊 Interactive charts with 250-day price history
 - 🤖 Hybrid scoring algorithm (final_score: 0-100)
 - ⏰ Automated daily scheduler (9:30 AM)
 - 🔄 Instant API with <100ms latency
