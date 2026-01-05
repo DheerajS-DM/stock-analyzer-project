@@ -25,9 +25,9 @@ Mean Reversion Analysis
 
 Features:
 
-📈 Real-time stock analysis for 100+ US stocks
+📈 Real-time stock analysis for 10 US stocks
 
-📊 Interactive charts with 270-day price history
+📊 Interactive charts with 250-day price history
 
 🤖 Hybrid scoring algorithm (final_score: 0-100)
 
@@ -401,3 +401,4 @@ Database help? Check Supabase Docs
 Last Updated: January 5, 2026
 Status: ✅ Production Ready
 Uptime: 24/7 monitoring enabled
+
