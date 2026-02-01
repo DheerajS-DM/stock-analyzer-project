@@ -1,10 +1,34 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   Brush
 } from 'recharts';
 
-const API_URL = "https://stock-analyzer-project-0fkx.onrender.com";
+// Use environment variable if available, otherwise fallback to your Render URL
+const API_URL = process.env.REACT_APP_API_URL || "https://stock-analyzer-project-0fkx.onrender.com";
+
+// --- MOVED OUTSIDE COMPONENT TO PREVENT RE-RENDERS ---
+const WarningBox = () => (
+  <div style={{
+    color: '#ff4444',
+    fontWeight: 'bold',
+    fontSize: '14px',
+    textAlign: 'center',
+    border: '2px solid #ff4444',
+    backgroundColor: 'rgba(255, 0, 0, 0.15)',
+    padding: '12px',
+    borderRadius: '8px',
+    marginBottom: '20px',
+    textTransform: 'uppercase',
+    letterSpacing: '0.5px',
+    maxWidth: '300px'
+  }}>
+    ⚠️ Not Financial Advice <br/> 
+    <span style={{fontSize: '11px', fontWeight: 'normal', color: '#fca5a5'}}>
+      Project for educational purposes only
+    </span>
+  </div>
+);
 
 function App() {
   const [stocks, setStocks] = useState([]);
@@ -12,26 +36,34 @@ function App() {
   const [chartData, setChartData] = useState([]);
   const [loading, setLoading] = useState(false);
 
+  // --- FIXED: LOAD DATA LOGIC ---
+  // Defined inside useEffect to fix dependency warnings
   useEffect(() => {
-    fetchStocks();
-  }, []);
+    const fetchStocks = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch(`${API_URL}/stocks`);
+        const data = await response.json(); 
+        
+        // Safety check: Ensure we have an array, even if API fails
+        const stockList = data.stocks || [];
+        setStocks(stockList);
 
-  const fetchStocks = async () => {
-    try {
-      setLoading(true);
-      const response = await fetch(`${API_URL}/stocks`);
-      const data = await response.json(); 
-      setStocks(data.stocks);
-      if (data.stocks.length > 0) {
-        setSelectedStock(data.stocks[0]);
-        loadChartData(data.stocks[0].symbol);
+        if (stockList.length > 0) {
+          setSelectedStock(stockList[0]);
+          // We call the internal load function directly here
+          loadChartData(stockList[0].symbol);
+        }
+      } catch (error) {
+        console.error('Error fetching stocks:', error);
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      console.error('Error:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
+
+    fetchStocks();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const loadChartData = async (symbol) => {
     try {
@@ -50,6 +82,8 @@ function App() {
       setLoading(true);
       const response = await fetch(`${API_URL}/analyze/${symbol}`);
       const data = await response.json();
+      
+      // Update the selected stock and the list
       setSelectedStock(data);
       await loadChartData(symbol);
       setStocks(prev => prev.map(s => s.symbol === symbol ? data : s));
@@ -78,29 +112,6 @@ function App() {
     return '✋'; 
   };
 
-  // --- REUSABLE WARNING COMPONENT ---
-  const WarningBox = () => (
-    <div style={{
-      color: '#ff4444',
-      fontWeight: 'bold',
-      fontSize: '14px',
-      textAlign: 'center',
-      border: '2px solid #ff4444',
-      backgroundColor: 'rgba(255, 0, 0, 0.15)',
-      padding: '12px',
-      borderRadius: '8px',
-      marginBottom: '20px',
-      textTransform: 'uppercase',
-      letterSpacing: '0.5px',
-      maxWidth: '300px'
-    }}>
-      ⚠️ Not Financial Advice <br/> 
-      <span style={{fontSize: '11px', fontWeight: 'normal', color: '#fca5a5'}}>
-        Project for educational purposes only
-      </span>
-    </div>
-  );
-
   // --- INITIAL LOADING SCREEN (First Load) ---
   if (loading && !stocks.length) {
     return (
@@ -123,10 +134,7 @@ function App() {
           marginBottom: '30px'
         }}></div>
         <h2 style={{fontWeight: '400', marginBottom: '30px'}}>Initializing Market Data...</h2>
-        
-        {/* WARNING ADDED HERE */}
         <WarningBox />
-
         <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
       </div>
     );
@@ -169,8 +177,6 @@ function App() {
           }}></div>
           <div style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '10px' }}>Crunching Numbers...</div>
           <div style={{ color: '#94a3b8', marginBottom: '30px' }}>Analyzing historical trends & RSI</div>
-          
-          {/* WARNING ADDED HERE */}
           <WarningBox />
         </div>
       )}
@@ -201,7 +207,6 @@ function App() {
           }}>
             <h3 style={{ margin: '0 0 15px 0', color: '#f1f5f9' }}>Stock Controls</h3>
 
-            {/* WARNING IN DASHBOARD */}
             <div style={{
               color: '#ff4444',
               fontWeight: 'bold',
@@ -406,6 +411,8 @@ function App() {
                     onClick={() => {
                       setSelectedStock(stock);
                       loadChartData(stock.symbol);
+                      // Scroll to top
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
                     }}
                     style={{
                       padding: '20px',

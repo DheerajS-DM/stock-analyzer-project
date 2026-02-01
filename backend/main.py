@@ -8,22 +8,20 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 from supabase import create_client, Client
+from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.triggers.cron import CronTrigger
+import atexit
 
 # --- Setup & Configuration ---
 
 env_path = Path(__file__).parent / '.env'
 load_dotenv(dotenv_path=env_path)
 
-print(f"Loading .env from: {env_path}")
-print(f"URL Found: {'Yes' if os.getenv('SUPABASE_URL') else 'No'}")
-
 url = os.getenv("SUPABASE_URL")
 key = os.getenv("SUPABASE_ANON_KEY")
 supabase: Client = None
 
-if not url or not key:
-    print("WARNING: SUPABASE_URL or SUPABASE_ANON_KEY missing. Database features will be disabled.")
-else:
+if url and key:
     try:
         supabase = create_client(url, key)
         print("Supabase Connected")
@@ -40,14 +38,27 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# --- Global Config ---
+
+# Top 100 US Stocks (Hardcoded List)
+TRACKED_STOCKS = [
+    "AAPL", "MSFT", "GOOGL", "AMZN", "NVDA", "META", "TSLA", "BRK-B",
+    "JNJ", "V", "PG", "JPM", "MA", "HD", "DIS", "MCD", "KO", "PEP", "NFLX", "INTC",
+    "AMD", "IBM", "ORCL", "QCOM", "CSCO", "ADBE", "CRM", "INTU", "NOW", "SNOW",
+    "DDOG", "CRWD", "ZM", "TWLO", "SQ", "PYPL", "DASH", "UBER", "LYFT", "SPOT",
+    "ROKU", "TTD", "BA", "GE", "F", "GM", "T", "VZ", "TMUS", "CMCSA",
+    "NKE", "SBUX", "WMT", "COST", "TGT", "LOW", "CVX", "XOM", "PFE", "MRK",
+    "ABBV", "LLY", "AVGO", "TXN", "AMAT", "MU", "LRCX", "ADI", "KLAC", "PANW",
+    "FTNT", "ZS", "NET", "PLTR", "U", "RBLX", "COIN", "HOOD", "DKNG", "SHOP",
+    "MDB", "TEAM", "OKTA", "DOCU", "ESTC", "PATH", "GME", "AMC", "SOFI", "AFRM",
+    "UPST", "OPEN", "LCID", "RIVN", "NIO", "BABA", "JD", "BIDU", "TSM", "ASML"
+]
+
 # --- Core Algorithm ---
 
 def calculate_hybrid_value(symbol: str, decay_weight=0.7, tech_weight=0.3) -> dict:
-    """
-    Combines 4-year Exponential Decay (Value) with RSI (Timing).
-    """
     try:
-        # Fetch Data
+        symbol = symbol.upper().strip()
         end_date = datetime.now()
         start_date = end_date - timedelta(days=1460) 
         
@@ -56,7 +67,6 @@ def calculate_hybrid_value(symbol: str, decay_weight=0.7, tech_weight=0.3) -> di
         if data.empty or len(data) < 200:
             return {"error": f"Insufficient data for {symbol}"}
         
-        # Normalize Data
         close_data = data['Close']
         if isinstance(close_data, pd.DataFrame):
             prices = close_data.iloc[:, 0]
@@ -90,7 +100,7 @@ def calculate_hybrid_value(symbol: str, decay_weight=0.7, tech_weight=0.3) -> di
         
         tech_score = 100 - current_rsi
 
-        # Final Score Calculation
+        # Final Score
         final_score = (decay_score * decay_weight) + (tech_score * tech_weight)
         
         if final_score > 70:
@@ -115,7 +125,6 @@ def calculate_hybrid_value(symbol: str, decay_weight=0.7, tech_weight=0.3) -> di
                     "updated_at": datetime.now().isoformat()
                 }
                 supabase.table("stocks").upsert(db_record).execute()
-                print(f"Saved {symbol} to DB")
             except Exception as db_err:
                 print(f"DB Save skipped: {db_err}")
 
@@ -144,41 +153,30 @@ def calculate_hybrid_value(symbol: str, decay_weight=0.7, tech_weight=0.3) -> di
 # --- Scheduler Logic ---
 
 def scheduled_analysis():
-    """Runs daily analysis on top 100 stocks."""
-    print("[SCHEDULER] Starting daily analysis...")
-    
-    top_stocks = [
-        "AAPL", "MSFT", "GOOGL", "AMZN", "NVDA", "META", "TSLA", "BRK-B",
-        "JNJ", "V", "PG", "JPM", "MA", "HD", "DIS", "MCD", "KO", "PEP",
-        "NFLX", "INTC", "AMD", "IBM", "ORCL", "QCOM", "CSCO", "ADBE",
-        "CRM", "INTU", "NOW", "SNOW", "DDOG", "CRWD", "ZM", "TWLO",
-        "SQ", "PYPL", "DASH", "UBER", "LYFT", "SPOT", "ROKU", "TTD",
-        "BA", "GE", "F", "GM", "T", "VZ"
-    ]
+    print(f"[SCHEDULER] Starting daily analysis for {len(TRACKED_STOCKS)} stocks...")
     
     success_count = 0
     error_count = 0
     
-    for symbol in top_stocks:
+    for symbol in TRACKED_STOCKS:
         try:
             result = calculate_hybrid_value(symbol)
             if "error" not in result:
-                if supabase:
-                    # Duplicate logic inside calculate_hybrid_value handles the save
-                    # We just log success here
-                    success_count += 1
-                    print(f" [OK] {symbol}: {result['final_score']}")
-                else:
-                    print(f" [OK] {symbol}: Analyzed (DB disconnected)")
+                success_count += 1
             else:
                 error_count += 1
                 print(f" [ERR] {symbol}: {result.get('error')}")
-                
         except Exception as e:
             error_count += 1
             print(f" [ERR] {symbol}: Exception {str(e)}")
     
     print(f"[SCHEDULER] Complete. {success_count} analyzed, {error_count} errors")
+
+# Initialize Background Scheduler
+scheduler = BackgroundScheduler()
+scheduler.add_job(scheduled_analysis, CronTrigger(day_of_week='mon-fri', hour=9, minute=30))
+scheduler.start()
+atexit.register(lambda: scheduler.shutdown())
 
 # --- API Endpoints ---
 
@@ -192,15 +190,30 @@ def health():
 
 @app.get("/stocks")
 def top_stocks():
-    top_symbols = ["AAPL", "MSFT", "GOOGL", "AMZN", "NVDA", "TSLA", "META", "AMD", "NFLX", "INTC"]
+    """
+    Priority: 1. DB (Fast) -> 2. Realtime Fallback (Slow)
+    """
+    if supabase:
+        try:
+            response = supabase.table("stocks").select("*").order("final_score", desc=True).execute()
+            if response.data and len(response.data) > 0:
+                return {
+                    "stocks": response.data,
+                    "total": len(response.data),
+                    "source": "database_cache"
+                }
+        except Exception as e:
+            print(f"DB Fetch failed: {e}")
+
+    # Fallback to manual calculation if DB is empty/down
     results = []
-    
-    for symbol in top_symbols:
+    for symbol in TRACKED_STOCKS:
         result = calculate_hybrid_value(symbol)
         if "error" not in result:
             results.append(result)
     
-    return {"stocks": results, "total": len(results)}
+    results.sort(key=lambda x: x['final_score'], reverse=True)
+    return {"stocks": results, "total": len(results), "source": "real_time_computed"}
 
 @app.get("/analyze/{symbol}")
 def analyze_stock(symbol: str):
@@ -227,7 +240,7 @@ def get_stock_history(symbol: str):
 def trigger_scheduler():
     try:
         scheduled_analysis()
-        return {"status": "scheduler_triggered", "message": "Check Supabase table"}
+        return {"status": "scheduler_triggered"}
     except Exception as e:
         return {"error": str(e)}
 
