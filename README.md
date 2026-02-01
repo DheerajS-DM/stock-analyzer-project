@@ -1,8 +1,7 @@
 
 ```markdown
-# Stock Value Analyzer
-
-> **Real-time quantitative analysis of top stocks using proprietary exponential decay algorithm**
+ Stock Value Analyzer
+ **Real-time quantitative analysis of top stocks using proprietary exponential decay algorithm**
 
 [![Vercel](https://img.shields.io/badge/Frontend-Vercel-000000?style=flat&logo=vercel)](https://stock-analyzer-project-po4e2s65z-dheerajs-dms-projects.vercel.app)
 [![Render](https://img.shields.io/badge/Backend-Render-46E3B7?style=flat&logo=render)](https://stock-analyzer-project-0fkx.onrender.com)
