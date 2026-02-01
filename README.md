@@ -39,31 +39,8 @@ Stock Value Analyzer is a **production-grade full-stack quantitative finance app
 
 ```
 
-┌─────────────────────────────────────────────────────┐
-│                   FRONTEND (React)                  │
-│             Vercel CDN (Global)                     │
-│   Stock dropdown (top 100)                          │
-│   Interactive charts (Recharts)                     │
-│   Real-time scores & signals                        │
-└────────────────────┬────────────────────────────────┘
-│ HTTPS
-↓
-┌─────────────────────────────────────────────────────┐
-│                BACKEND (FastAPI)                    │
-│             Render Free Tier                        │
-│   /stocks - List top 100 stocks                     │
-│   /analyze/{symbol} - Score single stock            │
-│   /history/{symbol} - 270 days price history        │
-│   /trigger-scheduler - Force analysis               │
-└────────────────────┬────────────────────────────────┘
-│
-┌────────────┼────────────┐
-↓            ↓            ↓
-┌────────┐ ┌──────────┐ ┌──────────┐
-│Supabase│ │ yfinance │ │Scheduler │
-│ Data   │ │  API     │ │  (APSch) │
-│ Store  │ │ (stocks) │ │ (daily)  │
-└────────┘ └──────────┘ └──────────┘
+
+<img width="422" height="470" alt="image" src="https://github.com/user-attachments/assets/49eff2c0-ed60-4739-bbb9-9677ba41af3d" />
 
 ```
 
