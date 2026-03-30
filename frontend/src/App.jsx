@@ -388,7 +388,6 @@ function App() {
             )}
           </div>
         </div>  
-      <Analytics />
         {/* STOCK GRID */}
         {!loading && stocks.length > 0 && (
           <div style={{
@@ -447,7 +446,9 @@ function App() {
           </div>
         )}
       </div>
+      <Analytics />
     </div>
+    
   );
 }
 
