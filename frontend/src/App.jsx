@@ -193,7 +193,7 @@ function App() {
           📈 Stock Value Analyzer
         </h1>
         <div style={{ color: '#94a3b8', marginBottom: '40px' }}>
-          Real-time analysis of top stocks • Powered by Yahoo Finance
+          Real time analysis of top stocks • Powered by Yahoo Finance
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: '380px 1fr', gap: '30px' }}>
