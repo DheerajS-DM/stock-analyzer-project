@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Analytics } from "@vercel/analytics/react"
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   Brush
@@ -387,7 +388,7 @@ function App() {
             )}
           </div>
         </div>  
-
+      <Analytics />
         {/* STOCK GRID */}
         {!loading && stocks.length > 0 && (
           <div style={{
